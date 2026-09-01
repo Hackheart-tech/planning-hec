@@ -237,7 +237,7 @@ struct AjouterRdvPersoIntent: AppIntent {
         let fin = PlanningAPI.isoUTC(date.addingTimeInterval(3600))
         let ok = await PlanningAPI.post("rdv",
             body: [
-                "titre": texte, "type": "rdv", "prive": true,
+                "titre": texte, "type": "rdv", "prive": false,
                 "assigne_a": s.userId, "cree_par": s.userId, "statut": "planifie",
                 "debut": debut, "fin": fin,
             ],

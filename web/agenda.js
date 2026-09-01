@@ -1950,5 +1950,24 @@
     } catch (err) {
       alert("Chargement de l'agenda impossible : " + traduire(err));
     }
+
+    // Rafraîchissement automatique : au retour dans l'app (téléphone qu'on
+    // rouvre, ou RDV ajouté via Siri) et périodiquement tant qu'elle est ouverte.
+    let dernierRefresh = Date.now();
+    async function rafraichirAuto() {
+      if (Date.now() - dernierRefresh < 3000) return; // anti-rafale
+      dernierRefresh = Date.now();
+      try {
+        await chargerRdv();
+        await chargerAttente();
+      } catch (_) { /* silencieux : on réessaiera */ }
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") rafraichirAuto();
+    });
+    window.addEventListener("focus", rafraichirAuto);
+    setInterval(() => {
+      if (document.visibilityState === "visible") rafraichirAuto();
+    }, 60000);
   };
 })();
