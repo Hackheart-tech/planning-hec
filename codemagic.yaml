@@ -42,11 +42,18 @@ workflows:
         script: |
           npx cap sync ios
 
-      - name: Numéro de build auto (incrémenté depuis App Store Connect)
+      - name: Numéro de build auto (jamais de doublon)
         script: |
           cd ios/App
-          LATEST=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APP_ID" || echo 0)
-          agvtool new-version -all $(($LATEST + 1))
+          # dernier numéro connu côté App Store (0 si l'appel échoue)
+          LATEST=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APP_ID" 2>/dev/null || echo 0)
+          case "$LATEST" in ''|*[!0-9]*) LATEST=0 ;; esac
+          NEXT=$((LATEST + 1))
+          # on prend le max avec le compteur Codemagic (toujours croissant) pour
+          # ne jamais retomber sur un numéro déjà envoyé si get-latest renvoie 0
+          if [ "${BUILD_NUMBER:-0}" -gt "$NEXT" ]; then NEXT="$BUILD_NUMBER"; fi
+          echo "Numéro de build utilisé : $NEXT (App Store latest=$LATEST, Codemagic BUILD_NUMBER=${BUILD_NUMBER:-?})"
+          agvtool new-version -all "$NEXT"
 
       - name: Préparer la signature (certificats + profils auto)
         script: |
