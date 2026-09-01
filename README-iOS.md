@@ -12,16 +12,9 @@ Le build se fait dans le cloud (Codemagic) — aucun Mac nécessaire.
 
 ## Étapes pour compiler et installer (à faire une fois)
 
-### 1. Mettre le projet sur GitHub
-Créer un dépôt **privé** (ex : `planning-hec`) et y pousser tout ce dossier.
-```bash
-git init
-git add .
-git commit -m "Planning HEC iOS (Capacitor)"
-git branch -M main
-git remote add origin https://github.com/<toi>/planning-hec.git
-git push -u origin main
-```
+### 1. GitHub — ✅ FAIT
+Le projet est déjà poussé sur **https://github.com/Hackheart-tech/planning-hec** (branche `main`).
+Pour les mises à jour futures : `git add . && git commit -m "..." && git push`.
 > Le `.gitignore` exclut déjà `node_modules`, les Pods, les secrets (.p8/.pem) et les zips.
 
 ### 2. App Store Connect : créer la fiche de l'app
