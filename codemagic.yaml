@@ -26,7 +26,7 @@ workflows:
         - appstore           # contient CERTIFICATE_PRIVATE_KEY (variable sécurisée)
       vars:
         BUNDLE_ID: "fr.hecmonaco.planning"     # IDENTIQUE à la fiche App Store Connect
-        APP_STORE_APP_ID: "PLACEHOLDER_APP_STORE_APP_ID"  # <- Apple ID de l'app (à remplir)
+        APP_STORE_APP_ID: "6807453207"        # Apple ID de l'app (App Information)
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
 
