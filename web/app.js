@@ -274,13 +274,41 @@ async function demarrer() {
   $("btn-deconnexion-attente").addEventListener("click", deconnexion);
 
   const { data } = await sb.auth.getSession();
+  majPontSiri(data.session || null);
   if (data.session) await montrerApp(data.session);
   else montrerConnexion();
 
   sb.auth.onAuthStateChange((evenement, session) => {
+    majPontSiri(session || null);
     if (session) montrerApp(session);
     else montrerConnexion();
   });
+}
+
+// Pont Siri (app iOS uniquement) : recopie la session Supabase dans le stockage
+// natif pour que les raccourcis Siri (App Intents) puissent interroger Supabase.
+async function majPontSiri(session) {
+  try {
+    const cap = window.Capacitor;
+    if (!cap || typeof cap.isNativePlatform !== "function" || !cap.isNativePlatform()) return;
+    const P = cap.Plugins && cap.Plugins.Preferences;
+    if (!P) return;
+    if (session) {
+      await P.set({
+        key: "sb_session",
+        value: JSON.stringify({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          user_id: session.user && session.user.id,
+          expires_at: session.expires_at,
+        }),
+      });
+    } else {
+      await P.remove({ key: "sb_session" });
+    }
+  } catch (_) {
+    /* non bloquant : sur le web classique Capacitor n'existe pas */
+  }
 }
 
 demarrer();
