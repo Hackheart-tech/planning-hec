@@ -1,0 +1,94 @@
+# ══════════════════════════════════════════════════════════════
+#  Planning HEC · Build iOS + envoi TestFlight/App Store depuis le cloud
+#  (aucun Mac requis — Codemagic loue un Mac avec Xcode à jour)
+#
+#  À CONFIGURER UNE FOIS dans l'interface Codemagic :
+#   1. Settings → Integrations → App Store Connect → ajouter la clé API
+#      (.p8 + Key ID + Issuer ID), intégration nommée : Codemagic
+#   2. Environment variables → variable CERTIFICATE_PRIVATE_KEY (groupe
+#      "appstore", cochée "Secure") = clé privée du certificat de distribution.
+#      (la même que GTALive peut être réutilisée : c'est le certificat Apple
+#       de distribution du COMPTE, pas de l'app.)
+#   3. Renseigner APP_STORE_APP_ID ci-dessous (Apple ID de l'app, visible dans
+#      App Store Connect → App Information) une fois la fiche de l'app créée.
+# ══════════════════════════════════════════════════════════════
+workflows:
+  ios-appstore:
+    name: Planning HEC · iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+      groups:
+        - appstore           # contient CERTIFICATE_PRIVATE_KEY (variable sécurisée)
+      vars:
+        BUNDLE_ID: "fr.hecmonaco.planning"     # IDENTIQUE à la fiche App Store Connect
+        APP_STORE_APP_ID: "PLACEHOLDER_APP_STORE_APP_ID"  # <- Apple ID de l'app (à remplir)
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+
+    integrations:
+      app_store_connect: Codemagic   # nom EXACT de l'intégration dans Codemagic
+
+    scripts:
+      - name: Installer les dépendances
+        script: |
+          npm ci || npm install
+
+      - name: Synchroniser Capacitor vers iOS
+        script: |
+          npx cap sync ios
+
+      - name: Numéro de build auto (incrémenté depuis App Store Connect)
+        script: |
+          cd ios/App
+          LATEST=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APP_ID" || echo 0)
+          agvtool new-version -all $(($LATEST + 1))
+
+      - name: Préparer la signature (certificats + profils auto)
+        script: |
+          set -e
+          echo "Key ID utilise   : ${APP_STORE_CONNECT_KEY_IDENTIFIER:-<VIDE>}"
+          echo "Issuer ID utilise: ${APP_STORE_CONNECT_ISSUER_ID:-<VIDE>}"
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles --project "ios/App/App.xcodeproj"
+          echo "──────── Reglages de signature ecrits dans le projet ────────"
+          if grep -q "PROVISIONING_PROFILE_SPECIFIER" ios/App/App.xcodeproj/project.pbxproj; then
+            grep -n "PROVISIONING_PROFILE_SPECIFIER\|DEVELOPMENT_TEAM\|CODE_SIGN_STYLE\|CODE_SIGN_IDENTITY" \
+              ios/App/App.xcodeproj/project.pbxproj
+          else
+            echo "AUCUN profil applique au projet -> l'archive echouerait."
+            ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || echo "  (dossier absent)"
+            exit 1
+          fi
+
+      - name: Compiler l'IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - ios/App/Podfile.lock
+
+    publishing:
+      email:
+        recipients:
+          - sebdecon@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true       # d'abord TestFlight (test interne)
+        # submit_to_app_store: true      # à décommenter pour publier sur l'App Store

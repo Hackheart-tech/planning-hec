@@ -1,0 +1,13 @@
+{
+  "appId": "fr.hecmonaco.planning",
+  "appName": "Planning HEC",
+  "webDir": "web",
+  "backgroundColor": "#111318",
+  "server": {
+    "iosScheme": "https"
+  },
+  "ios": {
+    "backgroundColor": "#111318",
+    "contentInset": "always"
+  }
+}

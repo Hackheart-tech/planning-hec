@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Planning HEC</title>
+<link rel="stylesheet" href="styles.css?v=20260812d">
+</head>
+<body>
+
+<!-- Bandeau d'alerte config -->
+<div id="alerte-config" class="alerte" hidden>
+  Configuration manquante : renseigne <code>SUPABASE_URL</code> et <code>SUPABASE_ANON_KEY</code> dans <code>web/config.js</code>.
+</div>
+
+<!-- ============ ÉCRAN CONNEXION ============ -->
+<main id="ecran-connexion" class="ecran centre" hidden>
+  <div class="carte-login">
+    <div class="marque">
+      <img class="logo-img" src="image/logo.jpg" alt="Logo" onerror="this.style.display='none'">
+      <span>Planning HEC</span>
+    </div>
+    <p class="sous-titre">Agenda d'équipe et fiches d'intervention</p>
+
+    <button id="btn-google" class="btn-google" type="button">
+      <svg viewBox="0 0 48 48" width="17" height="17" aria-hidden="true">
+        <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.2 17.7 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.2 5.3-4.7 6.9l7.6 5.9c4.4-4.1 6.8-10.1 6.8-17.3z"/>
+        <path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-2.9-.8-4.7s.3-3.3.8-4.7l-7.8-6.1C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.8-6.1z"/>
+        <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.8 2.3-8.3 2.3-6.3 0-11.7-3.7-13.6-9.8l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/>
+      </svg>
+      Continuer avec Google
+    </button>
+
+    <div class="separateur"><span>ou</span></div>
+
+    <form id="form-login" novalidate>
+      <label class="champ">
+        <span>Email</span>
+        <input id="email" type="email" autocomplete="email" placeholder="prenom@societe.fr" required>
+      </label>
+      <label class="champ">
+        <span>Mot de passe</span>
+        <input id="motdepasse" type="password" autocomplete="current-password" placeholder="••••••••" minlength="6" required>
+      </label>
+
+      <div id="champ-nom" class="champ" hidden>
+        <span>Ton nom</span>
+        <input id="nom" type="text" autocomplete="name" placeholder="Sébastien">
+      </div>
+
+      <button id="btn-principal" class="btn-primaire large" type="submit">Se connecter</button>
+    </form>
+
+    <div class="liens">
+      <button id="btn-bascule" class="lien" type="button">Créer un compte</button>
+      <button id="btn-lien-magique" class="lien" type="button">Recevoir un lien par email</button>
+    </div>
+
+    <p id="message" class="message" hidden></p>
+  </div>
+</main>
+
+<!-- ============ ÉCRAN ATTENTE DE VALIDATION ============ -->
+<main id="ecran-attente" class="ecran centre" hidden>
+  <div class="carte-login">
+    <div class="marque"><img class="logo-img" src="image/logo.jpg" alt="Logo" onerror="this.style.display='none'"><span>Planning HEC</span></div>
+    <h2 class="attente-titre">Compte en attente ⏳</h2>
+    <p class="sous-titre">
+      Ton compte <b id="attente-email"></b> est bien créé. Un administrateur doit le
+      valider avant que tu accèdes à l'agenda. Reviens un peu plus tard.
+    </p>
+    <button id="btn-deconnexion-attente" class="btn-secondaire" type="button">Se déconnecter</button>
+  </div>
+</main>
+
+<!-- ============ ÉCRAN APP (connecté) ============ -->
+<div id="ecran-app" class="ecran" hidden>
+  <header class="entete">
+    <div class="marque petite">
+      <img class="logo-img" src="image/logo.jpg" alt="Logo" onerror="this.style.display='none'">
+      <span>Planning HEC</span>
+    </div>
+    <div class="entete-droite">
+      <button id="btn-sync" class="btn-secondaire" type="button" title="Bientôt : import Dolibarr">⟳ Dolibarr</button>
+      <span class="moi">
+        <input id="moi-couleur" type="color" class="ma-couleur" title="Personnaliser ma couleur">
+        <span class="moi-texte">
+          <b id="moi-nom">…</b>
+          <small id="moi-role">…</small>
+        </span>
+      </span>
+      <button id="btn-deconnexion" class="btn-secondaire" type="button">Déconnexion</button>
+    </div>
+  </header>
+
+  <div class="app-corps">
+    <aside class="barre-laterale">
+      <button id="btn-nouveau" class="btn-primaire large" type="button">+ Nouveau RDV</button>
+      <button id="btn-journee" class="btn-secondaire large" type="button">📋 Ma journée</button>
+
+      <div class="bloc-equipe">
+        <div class="titre-bloc">
+          <span>Équipe</span>
+          <button id="btn-tout" class="mini-lien" type="button">tout</button>
+        </div>
+        <ul id="filtre-equipe" class="filtre-equipe"><li class="vide">Chargement…</li></ul>
+      </div>
+
+      <button id="btn-clients" class="btn-secondaire large" type="button">📇 Clients</button>
+      <button id="btn-sync-agenda" class="btn-secondaire large" type="button" hidden>📅 Sync agenda</button>
+      <button id="btn-dashboard" class="btn-secondaire large" type="button">📊 Tableau de bord</button>
+      <button id="btn-bons" class="btn-secondaire large" type="button" hidden>🧾 Bons d'intervention</button>
+
+      <button id="btn-equipe" class="btn-secondaire large" type="button" hidden>
+        Gérer l'équipe <span id="equipe-attente-badge" class="badge" hidden>0</span>
+      </button>
+
+      <div class="sidebar-logo">
+        <img src="image/logo.jpg" alt="Logo" onerror="this.parentElement.style.display='none'">
+      </div>
+    </aside>
+
+    <main class="zone-agenda">
+      <div id="calendrier"></div>
+    </main>
+  </div>
+
+  <!-- Dossiers en attente -->
+  <section class="dossiers-attente">
+    <div class="attente-tete">
+      <span class="titre-bloc sans-marge">Dossiers en attente <span id="attente-compteur" class="badge">0</span></span>
+      <span class="attente-info">interventions à planifier</span>
+      <button id="btn-signaler" class="btn-secondaire" type="button">+ Signaler</button>
+    </div>
+    <div id="liste-attente" class="liste-attente"><span class="vide">Aucun dossier en attente.</span></div>
+  </section>
+</div>
+
+<!-- ============ MODALE RDV ============ -->
+<div id="modal-rdv" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite" role="dialog" aria-modal="true">
+    <h3 id="rdv-titre-modal">Nouveau rendez-vous</h3>
+    <div class="deux-cols">
+      <div class="champ-modal">
+        <label for="r-type">Type</label>
+        <select id="r-type">
+          <option value="rdv">Rendez-vous</option>
+          <option value="chantier">Chantier (fiche à remplir)</option>
+          <option value="bloc">Blocage (congés, indispo)</option>
+        </select>
+      </div>
+      <div class="champ-modal">
+        <label>&nbsp;</label>
+        <label class="check-inline"><input id="r-prive" type="checkbox"> Privé (masqué aux autres)</label>
+      </div>
+    </div>
+    <div class="champ-modal">
+      <label for="r-titre" id="r-titre-label">Titre</label>
+      <input id="r-titre" type="text" placeholder="Ex : Installation alarme + caméras">
+    </div>
+    <div class="deux-cols">
+      <div class="champ-modal">
+        <label for="r-assigne">Responsable</label>
+        <select id="r-assigne"></select>
+      </div>
+      <div class="champ-modal">
+        <label for="r-statut">Statut</label>
+        <select id="r-statut">
+          <option value="planifie">Planifié</option>
+          <option value="confirme">Confirmé</option>
+          <option value="termine">Terminé</option>
+          <option value="annule">Annulé</option>
+        </select>
+      </div>
+    </div>
+    <div class="champ-modal" id="champ-equipe">
+      <label>Équipe <small>(autres intervenants sur ce chantier)</small></label>
+      <div id="r-equipe" class="equipe-check"></div>
+    </div>
+    <div class="deux-cols">
+      <div class="champ-modal">
+        <label for="r-debut">Début</label>
+        <input id="r-debut" type="datetime-local">
+      </div>
+      <div class="champ-modal">
+        <label for="r-fin">Fin</label>
+        <input id="r-fin" type="datetime-local">
+      </div>
+    </div>
+    <div class="champ-modal" id="champ-client">
+      <label for="r-client">Client <small>(obligatoire)</small></label>
+      <input id="r-client-search" type="text" class="client-search" placeholder="Rechercher un client…">
+      <select id="r-client">
+        <option value="">Choisir un client</option>
+        <option value="__nouveau__">+ Créer un client…</option>
+      </select>
+    </div>
+    <div class="champ-modal" id="bloc-nouveau-client" hidden>
+      <label for="r-client-nom">Nouveau client</label>
+      <input id="r-client-nom" type="text" placeholder="Nom / société">
+      <input id="r-nc-adresse" type="text" placeholder="Adresse" style="margin-top:8px">
+      <div class="deux-cols" style="margin-top:8px">
+        <input id="r-nc-cp" type="text" placeholder="Code postal">
+        <input id="r-nc-ville" type="text" placeholder="Ville">
+      </div>
+      <div class="deux-cols" style="margin-top:8px">
+        <input id="r-client-tel" type="text" placeholder="Téléphone">
+        <input id="r-nc-email" type="email" placeholder="Email">
+      </div>
+    </div>
+    <div class="champ-modal" id="bloc-coord-client" hidden>
+      <label>Coordonnées du client <small>(les champs verrouillés viennent de Dolibarr ; complète ceux qui sont vides)</small></label>
+      <input id="r-cc-adresse" type="text" placeholder="Adresse">
+      <div class="deux-cols" style="margin-top:8px">
+        <input id="r-cc-cp" type="text" placeholder="Code postal">
+        <input id="r-cc-ville" type="text" placeholder="Ville">
+      </div>
+      <div class="deux-cols" style="margin-top:8px">
+        <input id="r-cc-tel" type="text" placeholder="Téléphone">
+        <input id="r-cc-email" type="email" placeholder="Email">
+      </div>
+    </div>
+    <div class="champ-modal">
+      <label for="r-lieu">Lieu</label>
+      <input id="r-lieu" type="text" placeholder="Adresse, chantier…">
+      <button id="r-maps" class="btn-secondaire" type="button" style="margin-top:8px">🧭 Y aller (Maps)</button>
+    </div>
+    <div class="champ-modal">
+      <label for="r-desc">Notes</label>
+      <textarea id="r-desc" rows="2"></textarea>
+    </div>
+    <p id="rdv-message" class="message" hidden></p>
+    <div class="modal-actions">
+      <button id="r-supprimer" class="btn-danger" type="button" hidden>Supprimer</button>
+      <button id="r-vers-attente" class="btn-secondaire" type="button" hidden title="Retire du calendrier et remet dans les tâches à faire">↩︎ Remettre à faire</button>
+      <button id="r-fiche" class="btn-secondaire" type="button" hidden>📋 Fiche</button>
+      <span class="pousse"></span>
+      <button class="btn-secondaire" type="button" data-fermer>Annuler</button>
+      <button id="r-enregistrer" class="btn-primaire" type="button">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALE SIGNALEMENT ============ -->
+<div id="modal-attente" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite" role="dialog" aria-modal="true">
+    <h3>Signaler une intervention</h3>
+    <p class="p">À planifier plus tard. Elle apparaîtra dans « Dossiers en attente ».</p>
+    <div class="champ-modal">
+      <label for="a-titre">Quoi ?</label>
+      <input id="a-titre" type="text" placeholder="Ex : Interphone en panne">
+    </div>
+    <div class="champ-modal">
+      <label for="a-client">Client <small>(obligatoire)</small></label>
+      <input id="a-client-search" type="text" class="client-search" placeholder="Rechercher un client…">
+      <select id="a-client">
+        <option value="">Choisir un client</option>
+        <option value="__nouveau__">+ Créer un client…</option>
+      </select>
+    </div>
+    <div class="champ-modal" id="bloc-nouveau-client-attente" hidden>
+      <label for="a-client-nom">Nouveau client</label>
+      <input id="a-client-nom" type="text" placeholder="Nom / société">
+      <input id="a-nc-adresse" type="text" placeholder="Adresse" style="margin-top:8px">
+      <div class="deux-cols" style="margin-top:8px">
+        <input id="a-nc-cp" type="text" placeholder="Code postal">
+        <input id="a-nc-ville" type="text" placeholder="Ville">
+      </div>
+      <div class="deux-cols" style="margin-top:8px">
+        <input id="a-client-tel" type="text" placeholder="Téléphone">
+        <input id="a-nc-email" type="email" placeholder="Email">
+      </div>
+    </div>
+    <div class="champ-modal">
+      <label for="a-urgence">Urgence</label>
+      <select id="a-urgence">
+        <option value="urgent">Urgent</option>
+        <option value="semaine">Cette semaine</option>
+        <option value="normale" selected>Quand possible</option>
+      </select>
+    </div>
+    <div class="champ-modal">
+      <label for="a-note">Détails</label>
+      <textarea id="a-note" rows="2"></textarea>
+    </div>
+    <p id="attente-message" class="message" hidden></p>
+    <div class="modal-actions">
+      <span class="pousse"></span>
+      <button class="btn-secondaire" type="button" data-fermer>Annuler</button>
+      <button id="a-enregistrer" class="btn-primaire" type="button">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALE FICHE D'INTERVENTION ============ -->
+<div id="modal-fiche" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite large" role="dialog" aria-modal="true">
+    <h3 id="fiche-titre">Fiche d'intervention</h3>
+
+    <div class="fiche-meta">
+      <div class="fiche-ligne"><span>Client</span><b id="fiche-client">Non renseigné</b></div>
+      <div class="fiche-ligne"><span>Rendez-vous</span><b id="fiche-rdv">Non renseigné</b></div>
+    </div>
+
+    <div class="champ-modal">
+      <label for="fiche-statut">Statut</label>
+      <select id="fiche-statut">
+        <option value="devis">Devis</option>
+        <option value="en_cours">En cours</option>
+        <option value="termine">Terminé</option>
+        <option value="facture">Facturé</option>
+        <option value="annule">Annulé</option>
+      </select>
+    </div>
+
+    <div class="champ-modal">
+      <label for="fiche-notes">Notes de terrain</label>
+      <textarea id="fiche-notes" rows="3" placeholder="Ce qui a été posé / câblé / configuré, matériel utilisé…"></textarea>
+    </div>
+
+    <div class="champ-modal">
+      <label>Suivi du temps <small>(pour la facturation)</small></label>
+      <div class="deux-cols">
+        <div>
+          <input id="fiche-arrivee" type="datetime-local" aria-label="Arrivée">
+          <button id="fiche-arrivee-now" class="mini-lien" type="button">Arrivée = maintenant</button>
+        </div>
+        <div>
+          <input id="fiche-depart" type="datetime-local" aria-label="Départ">
+          <button id="fiche-depart-now" class="mini-lien" type="button">Départ = maintenant</button>
+        </div>
+      </div>
+      <small id="fiche-duree" class="signature-info"></small>
+    </div>
+
+    <div class="champ-modal">
+      <label>Devis</label>
+      <div id="fiche-devis" class="fiche-devis">Aucun devis joint.</div>
+      <div class="deux-cols">
+        <button id="fiche-devis-dolibarr" class="btn-secondaire" type="button">📥 Devis Dolibarr</button>
+        <button id="fiche-ajouter-devis" class="btn-secondaire" type="button">📎 Joindre un fichier</button>
+      </div>
+      <div id="fiche-devis-picker" hidden style="margin-top:8px">
+        <select id="fiche-devis-select"></select>
+        <div class="deux-cols" style="margin-top:6px">
+          <button id="fiche-devis-annuler" class="btn-secondaire" type="button">Annuler</button>
+          <button id="fiche-devis-lier" class="btn-primaire" type="button">Lier ce devis</button>
+        </div>
+      </div>
+      <input id="fiche-devis-input" type="file" accept="application/pdf,image/*" hidden>
+    </div>
+
+    <div class="champ-modal">
+      <label>Photos</label>
+      <div id="fiche-photos" class="photos-grille"><span class="vide">Aucune photo.</span></div>
+      <input id="fiche-photo-input" type="file" accept="image/*" multiple hidden>
+      <button id="fiche-ajouter-photo" class="btn-secondaire" type="button">📷 Ajouter des photos</button>
+    </div>
+
+    <div class="champ-modal">
+      <label>Signature du client</label>
+      <div class="signature-boite">
+        <canvas id="fiche-signature" class="signature-canvas"></canvas>
+        <img id="fiche-signature-img" class="signature-img" hidden alt="Signature du client">
+      </div>
+      <div class="signature-actions">
+        <small id="fiche-signature-info" class="signature-info"></small>
+        <span class="pousse"></span>
+        <button id="fiche-sig-effacer" class="mini-lien" type="button">Effacer</button>
+        <button id="fiche-sig-refaire" class="mini-lien" type="button" hidden>Refaire la signature</button>
+      </div>
+    </div>
+
+    <p id="fiche-message" class="message" hidden></p>
+    <div class="modal-actions">
+      <button id="fiche-pdf" class="btn-secondaire" type="button">⬇️ PDF</button>
+      <span class="pousse"></span>
+      <button class="btn-secondaire" type="button" data-fermer>Fermer</button>
+      <button id="fiche-enregistrer" class="btn-primaire" type="button">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALE CLIENTS (recherche + historique) ============ -->
+<div id="modal-clients" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite large" role="dialog" aria-modal="true">
+    <div id="clients-vue-liste">
+      <h3>Clients</h3>
+      <input id="clients-recherche" type="text" class="client-search" placeholder="Rechercher un client…">
+      <div id="clients-resultats" class="clients-resultats"></div>
+    </div>
+    <div id="clients-vue-detail" hidden>
+      <button id="clients-retour" class="mini-lien" type="button">← Retour à la liste</button>
+      <h3 id="cd-nom" style="margin:6px 0 10px"></h3>
+      <div class="fiche-meta">
+        <div class="fiche-ligne"><span>Adresse</span><b id="cd-adresse"></b></div>
+        <div class="fiche-ligne"><span>Téléphone</span><b id="cd-tel"></b></div>
+        <div class="fiche-ligne"><span>Email</span><b id="cd-email"></b></div>
+      </div>
+      <div class="titre-bloc sans-marge" style="margin-top:14px">Rendez-vous</div>
+      <div id="cd-rdvs" class="cd-liste"></div>
+      <div class="titre-bloc sans-marge" style="margin-top:14px">Interventions</div>
+      <div id="cd-interventions" class="cd-liste"></div>
+    </div>
+    <div class="modal-actions">
+      <span class="pousse"></span>
+      <button class="btn-primaire" type="button" data-fermer>Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALE GESTION ÉQUIPE (admin) ============ -->
+<div id="modal-equipe" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite" role="dialog" aria-modal="true">
+    <h3>Gérer l'équipe</h3>
+    <p class="p">Valide les nouveaux comptes, choisis leur rôle et leur couleur (unique).</p>
+    <div id="liste-membres" class="liste-membres"></div>
+    <p id="equipe-message" class="message" hidden></p>
+    <div class="modal-actions">
+      <span class="pousse"></span>
+      <button class="btn-primaire" type="button" data-fermer>Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALE BONS D'INTERVENTION (admin) ============ -->
+<div id="modal-bons" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite large" role="dialog" aria-modal="true">
+    <h3>Bons d'intervention</h3>
+    <div class="bons-tabs">
+      <button id="bons-tab-atraiter" class="bons-tab on" type="button">À traiter</button>
+      <button id="bons-tab-traites" class="bons-tab" type="button">Traités</button>
+    </div>
+    <div class="bons-filtres">
+      <input id="bons-recherche" class="client-search" type="text" placeholder="Filtrer par client…">
+      <select id="bons-createur"><option value="">Tous les créateurs</option></select>
+      <select id="bons-tri">
+        <option value="date">Trier par date</option>
+        <option value="client">Trier par client</option>
+        <option value="createur">Trier par créateur</option>
+      </select>
+    </div>
+    <div id="bons-liste" class="bons-liste"></div>
+    <div class="modal-actions">
+      <span class="pousse"></span>
+      <button class="btn-primaire" type="button" data-fermer>Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALE MA JOURNÉE ============ -->
+<div id="modal-journee" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite large" role="dialog" aria-modal="true">
+    <div class="journee-tete">
+      <button id="journee-prec" class="btn-secondaire" type="button">‹</button>
+      <h3 id="journee-date">Ma journée</h3>
+      <button id="journee-suiv" class="btn-secondaire" type="button">›</button>
+    </div>
+    <div id="journee-liste" class="cd-liste"></div>
+    <div class="modal-actions">
+      <span class="pousse"></span>
+      <button class="btn-primaire" type="button" data-fermer>Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALE SYNC AGENDA ============ -->
+<div id="modal-sync" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite" role="dialog" aria-modal="true">
+    <h3>📅 Synchroniser avec ton agenda</h3>
+    <p class="p">Ajoute le planning de l'équipe dans <b>Google Agenda</b> ou l'app <b>Calendrier</b> de ton téléphone. Une fois abonné, les rendez-vous se mettent à jour tout seuls.</p>
+
+    <label class="lbl">Ton lien d'abonnement personnel</label>
+    <div class="sync-lien">
+      <input id="sync-url" type="text" readonly value="Chargement…">
+      <button id="sync-copier" class="btn-secondaire" type="button">Copier</button>
+    </div>
+    <p class="sync-note">⚠️ Ce lien est personnel et secret — ne le partage pas.</p>
+
+    <div class="sync-etapes">
+      <details open>
+        <summary>📱 iPhone / iPad</summary>
+        <p class="p">Touche le bouton ci-dessous, puis confirme « S'abonner ». Le planning apparaît dans l'app Calendrier.</p>
+        <a id="sync-webcal" class="btn-primaire" href="#">S'abonner sur iPhone</a>
+      </details>
+      <details>
+        <summary>🟦 Google Agenda (ordinateur)</summary>
+        <p class="p">Sur <b>calendar.google.com</b> : « Autres agendas » → <b>+</b> → « À partir de l'URL » → colle le lien → « Ajouter l'agenda ».</p>
+      </details>
+      <details>
+        <summary>🤖 Android</summary>
+        <p class="p">Ajoute d'abord le lien dans Google Agenda sur ordinateur (méthode ci-dessus). Il apparaîtra ensuite automatiquement dans l'app Google Agenda de ton téléphone (active-le dans les réglages de l'app si besoin).</p>
+      </details>
+    </div>
+
+    <div class="modal-actions">
+      <button id="sync-regenerer" class="btn-danger" type="button">Régénérer le lien</button>
+      <span class="pousse"></span>
+      <button class="btn-primaire" type="button" data-fermer>Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALE TABLEAU DE BORD ============ -->
+<div id="modal-dashboard" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite large" role="dialog" aria-modal="true">
+    <h3>Tableau de bord</h3>
+    <div id="dash-contenu"><p class="p">Chargement…</p></div>
+    <div class="modal-actions">
+      <span class="pousse"></span>
+      <button class="btn-primaire" type="button" data-fermer>Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales/fr.global.min.js"></script>
+<script src="config.js"></script>
+<script src="agenda.js?v=20260812d"></script>
+<script src="app.js?v=20260812d"></script>
+</body>
+</html>

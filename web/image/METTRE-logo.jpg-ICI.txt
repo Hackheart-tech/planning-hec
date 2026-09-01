@@ -1,0 +1,1 @@
+Le logo va ici : www/image/logo.jpg (le site le cherche à image/logo.jpg)

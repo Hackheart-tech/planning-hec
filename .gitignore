@@ -1,0 +1,43 @@
+# ══════════════════════════════════════════════
+#  SECRETS — NE JAMAIS COMMITER
+# ══════════════════════════════════════════════
+*.p8
+*.p12
+*.pem
+*.mobileprovision
+*.cer
+*_secret.txt
+*secret*.key
+.env
+.env.*
+
+# ══════════════════════════════════════════════
+#  Dépendances (régénérées par npm install)
+# ══════════════════════════════════════════════
+node_modules/
+
+# ══════════════════════════════════════════════
+#  Sorties de build iOS (régénérées par Codemagic)
+# ══════════════════════════════════════════════
+ios/App/Pods/
+ios/App/build/
+ios/App/App/public/
+ios/App/Podfile.lock
+DerivedData/
+build/
+*.ipa
+
+# ══════════════════════════════════════════════
+#  Archives / livrables locaux
+# ══════════════════════════════════════════════
+*.zip
+
+# ══════════════════════════════════════════════
+#  OS / éditeurs
+# ══════════════════════════════════════════════
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log

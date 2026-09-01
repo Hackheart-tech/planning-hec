@@ -1,0 +1,19 @@
+{
+  "name": "planninghec",
+  "version": "1.0.0",
+  "description": "Planning HEC - agenda equipe + fiches d'intervention (Capacitor iOS)",
+  "private": true,
+  "scripts": {
+    "sync": "cap sync",
+    "open:ios": "cap open ios",
+    "serve": "node dev-server.js"
+  },
+  "dependencies": {
+    "@capacitor/app": "7.1.2",
+    "@capacitor/core": "7.6.8",
+    "@capacitor/ios": "7.6.8"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.6.8"
+  }
+}
