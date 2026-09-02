@@ -45,6 +45,8 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>Planning HEC utilise l'appareil photo pour prendre les photos des interventions.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
