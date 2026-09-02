@@ -252,6 +252,18 @@ struct AjouterRdvPersoIntent: AppIntent {
 @available(iOS 16.0, *)
 struct PlanningShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
+        // RDV en PREMIER pour que Siri ne le confonde pas avec la tâche.
+        AppShortcut(
+            intent: AjouterRdvPersoIntent(),
+            phrases: [
+                "Ajoute un rendez-vous dans \(.applicationName)",
+                "Nouveau rendez-vous dans \(.applicationName)",
+                "Planifie un rendez-vous dans \(.applicationName)",
+                "Crée un rendez-vous dans \(.applicationName)",
+            ],
+            shortTitle: "Ajouter un rendez-vous",
+            systemImageName: "calendar.badge.plus"
+        )
         AppShortcut(
             intent: ProchainRdvIntent(),
             phrases: [
@@ -262,23 +274,16 @@ struct PlanningShortcuts: AppShortcutsProvider {
             shortTitle: "Prochain rendez-vous",
             systemImageName: "calendar"
         )
+        // Tâche à faire : phrases SANS le mot "rendez-vous" pour éviter la confusion.
         AppShortcut(
             intent: AjouterTacheIntent(),
             phrases: [
-                "Ajoute une tâche dans \(.applicationName)",
-                "Nouvelle tâche dans \(.applicationName)",
+                "Ajoute une tâche à faire dans \(.applicationName)",
+                "Note une tâche dans \(.applicationName)",
+                "Nouvelle tâche à faire dans \(.applicationName)",
             ],
             shortTitle: "Ajouter une tâche",
             systemImageName: "checklist"
-        )
-        AppShortcut(
-            intent: AjouterRdvPersoIntent(),
-            phrases: [
-                "Ajoute un rendez-vous dans \(.applicationName)",
-                "Nouveau rendez-vous dans \(.applicationName)",
-            ],
-            shortTitle: "Ajouter un rendez-vous",
-            systemImageName: "calendar.badge.plus"
         )
     }
 }
